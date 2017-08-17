@@ -10,3 +10,5 @@ State-level GDP: https://www.bea.gov/iTable/index_regional.cfm
 Province-level exports and imports, to and from the United States: https://www.ic.gc.ca/app/scr/tdst/tdo/crtr.html?&productType=NAICS&lang=eng
 
 Province-level GDP: There is no official nominal GDP for 2016 yet. I use the current price 2015 GDP from http://www5.statcan.gc.ca/cansim/a26?lang=eng&id=3840038 and then infer the 2016 levels using RBC's latest provincial outlook. Specifically, the forecast nominal GDP growth for 2016 from http://www.rbc.com/economics/economic-reports/pdf/provincial-forecasts/provtbl.pdf 
+
+The North American shapefile is from the USGS: https://catalog.data.gov/dataset/usgs-small-scale-dataset-north-american-atlas-political-boundaries-200406-shapefile 
