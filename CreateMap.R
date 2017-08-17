@@ -8,15 +8,15 @@ library(mapproj)
 library(scales)
 library(ggrepel)
 
-# Load the shape files
+# Load the shapefiles
 ca <- readOGR("bound_p.shp")
 ca_map <- fortify(ca, region="STATEABB")
 
-# Merge data. Exports are *from* the location to Canada or the US (depending).
+# Merge data. Exports are from the provice (state) to the US (Canada).
 # Imports are the reverse. All data are in millions of local currency units.
 data<-read.csv("TradeData.csv") %>%
   mutate(share=(Exports+Imports)/GDP)
-  
+
 # Centroids for labels
 centroids<-read.csv("centroids.csv",stringsAsFactors=FALSE)
 
@@ -29,7 +29,7 @@ plotdata<-tibble(id=ca@data[,5]) %>%
   mutate(Rounded=round(share*100)) %>%
   filter(!(id %in% c("US-HI","US-AK")) & !is.na(share))
 
-# Generate the map
+# Create the map
 ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=share),map=ca_map,color="white") +
   expand_limits(x=c(-130,-59),y=c(25,60)) +
   coord_map("albers",lat0=39, lat1=45)+

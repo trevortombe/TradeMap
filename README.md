@@ -1,6 +1,13 @@
 # TradeMap
 Displays two-way trade between Canada and the United States, for each province and lower-48 state, as a relative to each region's GDP.
 
+All necsesary files are in the directory. 
+
+- "TradeData.csv" contains the data
+- "centroids.csv" is longitude/latitude coordinates for state/province centroids
+- "CreateMap.R" loads the data, packages, and creates the map
+- "map.png" is the output
+
 Sources:
 
 State-level exports and imports, to and from Canada: https://www.census.gov/foreign-trade/statistics/state/index.html
