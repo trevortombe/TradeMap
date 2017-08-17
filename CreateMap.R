@@ -24,7 +24,6 @@ centroids<-read.csv("centroids.csv",stringsAsFactors=FALSE)
 plotdata<-tibble(id=ca@data[,5]) %>%
   left_join(data,by="id") %>%
   left_join(centroids,by="id") %>%
-  select(id,share,Longitude,Latitude) %>%
   distinct(id,share,Longitude,Latitude) %>%
   mutate(Rounded=round(share*100)) %>%
   filter(!(id %in% c("US-HI","US-AK")) & !is.na(share))
