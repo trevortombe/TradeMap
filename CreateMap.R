@@ -32,7 +32,7 @@ plotdata<-tibble(id=ca@data[,5]) %>%
 #################
 ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=share),map=ca_map,color="white") +
   expand_limits(x=c(-130,-59),y=c(28,60)) +
-  coord_map("albers",lat0=39, lat1=45)+
+  coord_map("albers",lat0=40, lat1=60)+
   scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3", limits = c(0,0.50),
     guide_legend(title="CAN-USA Two-Way Trade as % of GDP : "),labels=percent, breaks=c(0,0.25,0.50)) +
   theme(
