@@ -26,7 +26,8 @@ plotdata<-tibble(id=ca@data[,5]) %>%
   left_join(centroids,by="id") %>%
   mutate(Rounded=round(share*100),
          gdpcap_2017=1000*(gdp_2017/cadusd_2017)/pop_2017,
-         gdpcap_2017ppp=1000*(gdp_2017/ppp_2016)/pop_2017) %>%
+         gdpcap_2017ppp=1000*(gdp_2017/ppp_2016)/pop_2017,
+         med_income_2015=(medianHH_2016/ppp_2016)/1000) %>%
   filter(!(id %in% c("US-HI","US-AK")) & !is.na(share))
 
 #################
@@ -62,10 +63,10 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=share),map=ca_map,color="wh
 the U.S. Census Bureau, and the Bureau of Economic Analysis. Graph by @trevortombe.")
 ggsave("map.png",width=8,height=6.25,dpi=300)
 
-######################
-# GDP/Capita in 2017 #
-######################
-ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2017ppp),map=ca_map,color="white") +
+###########################
+# Median Household Income #
+###########################
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=med_income_2015),map=ca_map,color="white") +
   expand_limits(x=c(-130,-59),y=c(28,60)) +
   coord_map("albers",lat0=40, lat1=60)+
   scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3") +
@@ -83,15 +84,15 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2017ppp),map=ca_map,
     plot.margin = unit(c(-2,-2,-2,-1), "cm")
   ) +
   geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  aes(label = paste("$",round(gdpcap_2017ppp),sep=""), x = Longitude, y = Latitude),
+                  aes(label = paste("$",round(med_income_2015),sep=""), x = Longitude, y = Latitude),
                   point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.5) +
   geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  xlim=c(0.32,0.32),aes(label = paste("$",round(gdpcap_2017ppp),sep=""), x = Longitude, y = Latitude),
+                  xlim=c(0.32,0.32),aes(label = paste("$",round(med_income_2015),sep=""), x = Longitude, y = Latitude),
                   point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.5,
                   segment.color = "gray80",segment.size = 0.25) +
-  labs(x="",y="",title="GDP per Capita in 2017, by Province/State (000s USD, PPP)",
-       subtitle="Note: Own calculations using data from Statistics Canada, the U.S. Census Bureau, and the Bureau
-of Economic Analysis. Real dollars, PPP adjusted. Graph by @trevortombe.")
+  labs(x="",y="",title="Median Household Income in 2015 (000s USD, PPP)",
+       subtitle="Note: Own calculations using data from Statistics Canada (Census 2016) and the U.S. Census Bureau. 
+Real dollars, PPP adjusted. Graph by @trevortombe.")
 ggsave("map.png",width=8,height=6.25,dpi=300)
 
 ###############
