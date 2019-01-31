@@ -13,22 +13,75 @@ ca <- readOGR("bound_p.shp")
 ca_map <- fortify(ca, region="STATEABB")
 
 # Merge data
-data<-read.csv("data.csv") %>%
-  mutate(share=(Exports+Imports)/GDP)
+data<-read.csv("data.csv")
 
 # Centroids for labels
 centroids<-read.csv("centroids.csv",stringsAsFactors=FALSE)
+new_centroids<-centroids %>%
+  rbind(data.frame(id="US-AK",state="Alaska",Longitude=-138,Latitude=46,abbrev="AK")) %>%
+  rbind(data.frame(id="US-HI",state="Hawaii",Longitude=-130,Latitude=30,abbrev="HI")) %>%
+  mutate(Latitude=ifelse(id %in% c("CA-YT","CA-NU","CA-NT"),62,Latitude))
 
 # Format the data
 plotdata<-tibble(id=ca@data[,5]) %>%
   distinct(id,Longitude,Latitude) %>%
   left_join(data,by="id") %>%
-  left_join(centroids,by="id") %>%
-  mutate(Rounded=round(share*100),
+  left_join(new_centroids,by="id") %>%
+  mutate(share=(Exports+Imports)/GDP,
+         Rounded=round(share*100),
          gdpcap_2017=1000*(gdp_2017/cadusd_2017)/pop_2017,
          gdpcap_2017ppp=1000*(gdp_2017/ppp_2016)/pop_2017,
-         med_income_2015=(medianHH_2016/ppp_2016)/1000) %>%
-  filter(!(id %in% c("US-HI","US-AK")) & !is.na(share))
+         med_income_2015=round((medianHH_2016/ppp_2016)/1000)) %>%
+  filter(!is.na(med_income_2015))
+  filter(!(id %in% c("US-HI","US-AK")))
+
+# Attempt to extract Alaska, hawaii
+alaska <- ca[ca$STATEABB=="US-AK" & !is.na(ca$STATEABB),]
+#alaska <- elide(alaska, rotate=-50)
+alaska <- elide(alaska, scale=max(apply(bbox(alaska), 1, diff)) / 2.3)
+alaska <- elide(alaska, shift=c(-150, 40))
+proj4string(alaska) <- proj4string(ca)
+hawaii <- ca[ca$STATEABB=="US-HI" & !is.na(ca$STATEABB),]
+#hawaii <- elide(hawaii, rotate=-50)
+hawaii <- elide(hawaii, scale=4*max(apply(bbox(hawaii), 1, diff))/2.3)
+hawaii <- elide(hawaii, shift=c(-135, 30))
+proj4string(hawaii) <- proj4string(ca)
+
+test <- ca[ca$STATEABB!="US-AK" & ca$STATEABB!="US-HI" & !is.na(ca$STATEABB),]
+test <- rbind(test,alaska,hawaii)
+test2<-fortify(test,region="STATEABB")
+AKmap<-fortify(alaska,region="STATEABB")
+HImap<-fortify(hawaii,region="STATEABB")
+
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=med_income_2015),map=test2,color="white") +
+  expand_limits(x=c(-130,-59),y=c(28,60)) +
+  coord_map("albers",lat0=40, lat1=60)+
+  scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3") +
+  theme(
+    axis.text.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.ticks.x=element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    legend.position="none",
+    #legend.text=element_text(size=10),
+    plot.title = element_text(size = 16, face = "bold",hjust=0.5),
+    plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
+    plot.margin = unit(c(-2,-2,-2,-1), "cm")
+  )+
+  geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  aes(label = paste("$",round(med_income_2015),sep=""), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3) +
+  geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  xlim=c(0.38,0.38),aes(label = paste("$",round(med_income_2015),sep=""), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3,
+                  segment.color = "gray80",segment.size = 0.25) +
+  labs(x="",y="",title="Median Household Income in 2015 (000s USD, PPP)",
+       subtitle="Note: Own calculations using data from Statistics Canada (Census 2016) and the U.S. Census Bureau. 
+       Real dollars, PPP adjusted. Graph by @trevortombe.")
+ggsave("map.png",width=8,height=6.25,dpi=300)
+
 
 #################
 # Canada + US48 #
