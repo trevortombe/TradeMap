@@ -19,6 +19,8 @@ library(ggpubr)
 library(testit)
 library(ggseas)
 library(readxl)
+library(rgdal)
+library(maptools)
 
 #library(plyr)
 #library(colortools)
@@ -34,7 +36,7 @@ getTABLE<-function(x) {
   unzip(temp,paste0(x,".csv"))
   rawdata<-read.csv(paste0(x,".csv"),stringsAsFactors=FALSE)
   data<-rawdata %>%
-    dplyr::rename(Ref_Date="ï..REF_DATE",
+    dplyr::rename(Ref_Date="?..REF_DATE",
                   Value=VALUE) %>%
     select(-UOM_ID,-SCALAR_ID)
   if (class(data$Ref_Date)=="character" & !grepl("/",data[1,"Ref_Date"])){
@@ -57,7 +59,7 @@ getTABLEraw<-function(x) {
 }
 loadTABLE<-function(x) {
   data<-read.csv(paste0(x,".csv"),stringsAsFactors=FALSE) %>%
-    dplyr::rename(Ref_Date="ï..REF_DATE",
+    dplyr::rename(Ref_Date="?..REF_DATE",
                   Value=VALUE) %>%
     select(-UOM_ID,-SCALAR_ID)
   if (class(data$Ref_Date)=="character" & !grepl("/",data$Ref_Date)){
