@@ -1,12 +1,5 @@
-# Load the necessary libraries
-library(ggplot2)
-library(tidyverse)
-library(maptools)
-library(rgeos)
-library(rgdal)
-library(mapproj)
-library(scales)
-library(ggrepel)
+# Load useful libraries and functions
+source("core.R")
 
 # Load the shapefiles
 ca <- readOGR("bound_p.shp")
@@ -27,14 +20,45 @@ plotdata<-tibble(id=ca@data[,5]) %>%
   distinct(id,Longitude,Latitude) %>%
   left_join(data,by="id") %>%
   left_join(new_centroids,by="id") %>%
+  filter(!is.na(Country)) %>%
+  group_by(Country) %>%
   mutate(share=(Exports+Imports)/GDP,
          Rounded=round(share*100),
          gdpcap_2017=1000*(gdp_2017/cadusd_2017)/pop_2017,
+         country_gdpcap=weighted.mean(gdpcap_2017,pop_2017),
+         rel_gdpcap=gdpcap_2017/country_gdpcap,
          gdpcap_2017ppp=1000*(gdp_2017/ppp_2016)/pop_2017,
-         med_income_2015=round((medianHH_2016/ppp_2016)/1000)) %>%
+         med_income_2015=round((medianHH_2016/ppp_2016)/1000),
+         revPC=weighted.mean(fed_rev_2017,pop_2017),
+         expPC=weighted.mean(fed_exp_2017,pop_2017),
+         gap=fed_rev_2017/pop_2017-sum(fed_rev_2017)/sum(pop_2017)-fed_exp_2017/pop_2017+sum(fed_exp_2017)/sum(pop_2017),
+         gapGDP=gap*pop_2017/GDP,
+         label=substr(id,4,5)) %>%
+  ungroup() %>%
   filter(!(id %in% c("CA-YT","CA-NU","CA-NT"))) %>%
   filter(!is.na(med_income_2015)) 
+
   filter(!(id %in% c("US-HI","US-AK")))
+  
+# Plot of revenue/spending differences across states/provinces
+ggplot(plotdata,aes(rel_gdpcap-1,1000000*gap))+
+  geom_smooth(method = "lm",se=F,color="black",linetype="dashed")+
+  geom_point(size=4,aes(color=Country))+
+  geom_hline(yintercept=0,size=1)+
+  geom_text_repel(aes(label=label))+
+  mytheme+
+  theme(legend.position = c(0.9,0.2))+
+  scale_color_brewer(name="",palette="Set1")+
+  scale_y_continuous(label=dollar,breaks=pretty_breaks(n=6))+
+  scale_x_continuous(label=percent)+
+  labs(y="Dollars per Person",
+       x="GDP/Capita Relative to the National Average",
+       title="Net Federal Fiscal Outflows in 2017, by State/Province",
+       subtitle="Note: Displays the differences between federal revenue and spending, relative to a 
+common per capita benchmark, against each state/provinces's relative GDP per capita.",
+       caption="Source: Own calculations from Schultz and Cummings (2019) for the USA and Statistics
+Canada data table 36-10-0450 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
+ggsave('plot.png',width=7,height=4.5,dpi=200)
 
 # Attempt to extract Alaska, hawaii
 alaska <- ca[ca$STATEABB=="US-AK" & !is.na(ca$STATEABB),]
@@ -83,6 +107,47 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=med_income_2015),map=test2,
        subtitle="Note: Own calculations using data from Statistics Canada (Census 2016) and the U.S. Census Bureau. 
        Real dollars, PPP adjusted. Graph by @trevortombe.")
 ggsave("map.png",width=8,height=6.25,dpi=300)
+
+# Fiscal Transfers in 2017, by State/Province
+ggplot() + geom_map(data=plotdata %>% mutate(status=ifelse(gap>0,"giver","getter")),
+                    aes(map_id=id,fill=status),
+                    map=test2,color="white") +
+  expand_limits(x=-100,y=50) +
+  coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
+  #scale_fill_gradient2(low = "#FF2700",mid="beige",high = "#2b83ba",
+  #                     midpoint = 0)+
+  scale_fill_manual(name="",values=c("#FF2700","#008FD5"),
+                    label=c("Net Recipient","Net Contributor"))+
+    theme(
+    axis.text.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.ticks.x=element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    legend.position=c(0.8,0.2),
+    #legend.text=element_text(size=10),
+    plot.title = element_text(size = 16, face = "bold",hjust=0.5),
+    plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
+    plot.margin = unit(c(-2,-2,-2,-1), "cm")
+  )+
+  annotate('rect',xmin=bbox(alaska)[1]+2,xmax=-129,ymin=bbox(alaska)[2],ymax=bbox(alaska)[4]+1,
+           fill="transparent",color="gray",size=1,linetype="dotted")+
+  annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
+           fill="transparent",color="gray",size=1,linetype="dotted")+
+  geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  aes(label = paste("$",round(1000*gap,1),"k",sep=""), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.75) +
+  geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  xlim=c(0.37,0.37),aes(label = paste("$",round(1000*gap,1),"k",sep=""), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.75,
+                  segment.color = "gray80",segment.size = 0.25) +
+  labs(x="",y="",title="Per Capita Federal Fiscal Gaps in Canada and the USA (2017)",
+       subtitle="Note: Displays the difference between federal revenue and spending in each region ($000/capita, local currency), relative to a common per capita benchmark.
+Net \"outflows\" imply federal revenue exceeds federal spending. Source: Own calculations from Schultz and Cummings (2019) for the USA and Statistics
+Canada data table 36-10-0450 for Canada. Methodology in Tombe (2018, Canadian Tax Journal).")
+ggsave("map.png",width=8,height=6.25,dpi=300)
+
 
 #########################
 # Including Territories #
