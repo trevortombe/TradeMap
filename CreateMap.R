@@ -198,6 +198,7 @@ plotdata<-tibble(id=ca@data[,5]) %>%
          Rounded=round(share*100),
          gdpcap_2017=1000*(gdp_2017/cadusd_2017)/pop_2017,
          gdpcap_2017ppp=1000*(gdp_2017/ppp_2016)/pop_2017,
+         gdpcap_2018ppp=1000*(gdp_2018/ppp_2018)/pop_2018,
          med_income_2015=round((medianHH_2016/ppp_2016)/1000)) %>%
   filter(!is.na(med_income_2015)) 
 hawaii <- ca[ca$STATEABB=="US-HI" & !is.na(ca$STATEABB),]
@@ -236,6 +237,37 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=med_income_2015),map=test2,
   labs(x="",y="",title="Median Household Income in 2015 (000s USD, PPP)",
        subtitle="Note: Own calculations using data from Statistics Canada (Census 2016) and the U.S. Census Bureau. 
        Real dollars, PPP adjusted. Graph by @trevortombe.")
+ggsave("map_all_NA.png",width=7,height=6.75,dpi=300)
+
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2018ppp),map=test2,color="transparent") +
+  expand_limits(x=-100,y=50) +
+  coord_map("albers",lat0=40, lat1=70,xlim=c(-140,-40),ylim=c(25,86))+
+  scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3") +
+  theme(
+    axis.text.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.ticks.x=element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    legend.position="none",
+    #legend.text=element_text(size=10),
+    plot.title = element_text(size = 16, face = "bold",hjust=0.5),
+    plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
+    plot.margin = unit(c(-2,-2,-2,-1), "cm")
+  )+
+  annotate('rect',xmin=-146,xmax=-136,ymin=34,ymax=41,fill="transparent",color="gray",size=1,linetype="dotted")+
+  #annotate('segment',x=-146,xend=-135,y=33,yend=33,color="white",size=2)+
+  geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  aes(label = paste("$",round(gdpcap_2018ppp),sep=""), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.5) +
+  geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  xlim=c(.35,.35),aes(label = paste("$",round(gdpcap_2018ppp),sep=""), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.5,
+                  segment.color = "gray80",segment.size = 0.25) +
+  labs(x="",y="",title="GDP per Capita in 2018 (000s USD, PPP)",
+       subtitle="Note: Own calculations using data from Statistics Canada data table 36-10-0222 and the US BEA. 
+       All values are in real PPP-adjusted US dollars, based on 36-10-0100. Graph by @trevortombe.")
 ggsave("map_all_NA.png",width=7,height=6.75,dpi=300)
 
 #################
