@@ -28,6 +28,7 @@ plotdata<-tibble(id=ca@data[,5]) %>%
          country_gdpcap=weighted.mean(gdpcap_2017,pop_2017),
          rel_gdpcap=gdpcap_2017/country_gdpcap,
          gdpcap_2017ppp=1000*(gdp_2017/ppp_2016)/pop_2017,
+         gdpcap_2018ppp=1000*(gdp_2018/ppp_2018)/pop_2018,
          med_income_2015=round((medianHH_2016/ppp_2016)/1000),
          revPC=weighted.mean(fed_rev_2017,pop_2017),
          expPC=weighted.mean(fed_exp_2017,pop_2017),
@@ -150,7 +151,7 @@ Canada data table 36-10-0450 for Canada. Methodology in Tombe (2018, Canadian Ta
 ggsave("map.png",width=8,height=6.25,dpi=300)
 
 # GDP per Capita
-ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2017ppp),map=test2,color="white") +
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2018ppp),map=test2,color="white") +
   expand_limits(x=-100,y=50) +
   coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
   scale_fill_continuous(low = "#e1f0ff",high = "dodgerblue3") +
