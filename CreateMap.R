@@ -173,10 +173,10 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2018ppp),map=test2,c
   annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
            fill="transparent",color="gray",size=1,linetype="dotted")+
   geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  aes(label = paste("$",round(gdpcap_2017ppp),sep=""), x = Longitude, y = Latitude),
+                  aes(label = paste("$",round(gdpcap_2018ppp),sep=""), x = Longitude, y = Latitude),
                   point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3) +
   geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  xlim=c(0.37,0.37),aes(label = paste("$",round(gdpcap_2017ppp),sep=""), x = Longitude, y = Latitude),
+                  xlim=c(0.37,0.37),aes(label = paste("$",round(gdpcap_2018ppp),sep=""), x = Longitude, y = Latitude),
                   point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3,
                   segment.color = "gray80",segment.size = 0.25) +
   labs(x="",y="",title="GDP per Capita in 2018 (000s USD, PPP)",
