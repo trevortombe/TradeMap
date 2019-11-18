@@ -3,7 +3,7 @@ Displays two-way trade between Canada and the United States, for each province a
 
 All necsesary files are in the directory. 
 
-- "TradeData.csv" contains the data
+- "data.csv" contains the data
 - "centroids.csv" is longitude/latitude coordinates for state/province centroids
 - "CreateMap.R" loads the data, packages, and creates the map
 - "map.png" is the output
