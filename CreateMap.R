@@ -17,7 +17,7 @@ new_centroids<-centroids %>%
 
 # Format the data
 plotdata<-tibble(id=ca@data[,5]) %>%
-  distinct(id,Longitude,Latitude) %>%
+  distinct(id) %>%
   left_join(data,by="id") %>%
   left_join(new_centroids,by="id") %>%
   filter(!is.na(Country)) %>%
