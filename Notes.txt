@@ -1,0 +1,1 @@
+Source for USA revenue by State: https://www.irs.gov/statistics/soi-tax-stats-gross-collections-by-type-of-tax-and-state-irs-data-book-table-5

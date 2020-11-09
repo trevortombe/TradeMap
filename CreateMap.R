@@ -27,13 +27,16 @@ plotdata<-tibble(id=ca@data[,5]) %>%
          gdpcap_2017=1000*(gdp_2017/cadusd_2017)/pop_2017,
          country_gdpcap=weighted.mean(gdpcap_2017,pop_2017),
          rel_gdpcap=gdpcap_2017/country_gdpcap,
+         rel_gdpcap2019=(gdp_2019/pop_2019)/weighted.mean(gdp_2019/pop_2019,pop_2019),
          gdpcap_2017ppp=1000*(gdp_2017/ppp_2016)/pop_2017,
          gdpcap_2018ppp=1000*(gdp_2018/ppp_2018)/pop_2018,
+         gdpcap_2019ppp=1000*(gdp_2019/ppp_2019)/pop_2019,
          med_income_2015=round((medianHH_2016/ppp_2016)/1000),
          revPC=weighted.mean(fed_rev_2017,pop_2017),
+         revPC_2019=weighted.mean(fed_rev_2019,pop_2019),
          expPC=weighted.mean(fed_exp_2017,pop_2017),
+         revgap2019=(fed_rev_2019/pop_2019)/(sum(fed_rev_2019)/sum(pop_2019)),
          gap=fed_rev_2017/pop_2017-sum(fed_rev_2017)/sum(pop_2017)-fed_exp_2017/pop_2017+sum(fed_exp_2017)/sum(pop_2017),
-         gap2018=fed_rev_2018/pop_2018-sum(fed_rev_2018)/sum(pop_2018)-fed_exp_2018/pop_2018+sum(fed_exp_2018)/sum(pop_2018),
          gapGDP=gap*pop_2017/GDP,
          label=substr(id,4,5)) %>%
   ungroup() %>%
@@ -60,6 +63,25 @@ ggplot(plotdata,aes(rel_gdpcap-1,gapGDP))+
 common per capita benchmark, against each state/provinces's relative GDP per capita.",
        caption="Source: Own calculations from Schultz and Cummings (2019) for the USA and Statistics
 Canada data table 36-10-0450 and 36-10-0222 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
+ggsave('plot.png',width=7,height=5,dpi=200)
+
+# Federal Revenue vs Relative GDP/Capita
+ggplot(plotdata,aes(rel_gdpcap2019-1,revgap2019-1))+
+  geom_smooth(method = "lm",se=F,color="black",linetype="dashed")+
+  geom_point(size=4,aes(color=Country))+
+  geom_hline(yintercept=0,size=1)+
+  geom_text_repel(aes(label=label),segment.colour = "gray50",segment.alpha = 0.5)+
+  mytheme+
+  theme(legend.position = c(0.2,0.85))+
+  scale_color_brewer(name="",palette="Set1")+
+  scale_y_continuous(label=percent_format(accuracy = 1),breaks=pretty_breaks(n=6),limit=c(NA,1))+
+  scale_x_continuous(label=percent_format(accuracy = 1))+
+  labs(y="Federal Per Capita Revenue (% of National Avg)",
+       x="GDP/Capita (% of National Avg)",
+       title="Relative Federal Revenue vs GDP in 2019, by State/Province",
+       subtitle="Note: Displays federal revenues per capita against GDP per capita, each as a share of the national average.",
+       caption="Source: Own calculations from IRS SOI Tax Stats for the USA and Statistics
+Canada data table 36-10-0450 and 36-10-0222 for Canada. Graph by @trevortombe.")
 ggsave('plot.png',width=7,height=5,dpi=200)
 
 # Attempt to extract Alaska, hawaii
@@ -151,7 +173,7 @@ Canada data table 36-10-0450 for Canada. Methodology in Tombe (2018, Canadian Ta
 ggsave("map.png",width=8,height=6.25,dpi=300)
 
 # GDP per Capita
-ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2018ppp),map=test2,color="white") +
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2019ppp),map=test2,color="white") +
   expand_limits(x=-100,y=50) +
   coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
   scale_fill_continuous(low = "#e1f0ff",high = "dodgerblue3") +
@@ -173,15 +195,15 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2018ppp),map=test2,c
   annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
            fill="transparent",color="gray",size=1,linetype="dotted")+
   geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  aes(label = paste("$",round(gdpcap_2018ppp),sep=""), x = Longitude, y = Latitude),
+                  aes(label = paste("$",round(gdpcap_2019ppp),sep=""), x = Longitude, y = Latitude),
                   point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3) +
   geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  xlim=c(0.37,0.37),aes(label = paste("$",round(gdpcap_2018ppp),sep=""), x = Longitude, y = Latitude),
+                  xlim=c(0.37,0.37),aes(label = paste("$",round(gdpcap_2019ppp),sep=""), x = Longitude, y = Latitude),
                   point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3,
                   segment.color = "gray80",segment.size = 0.25) +
-  labs(x="",y="",title="GDP per Capita in 2018 (000s USD, PPP)",
+  labs(x="",y="",title="GDP per Capita in 2019 (000s USD, PPP)",
        subtitle="Note: Own calculations using data from Statistics Canada data table 36-10-0222 and the US BEA. 
-       All values are in real PPP-adjusted US dollars, based on 36-10-0100. Graph by @trevortombe.")
+       All values are in real PPP-adjusted US dollars using OECD PPPs (doi: 10.1787/1290ee5a-en). Graph by @trevortombe.")
 ggsave("map.png",width=8,height=6.25,dpi=300)
 
 #########################
