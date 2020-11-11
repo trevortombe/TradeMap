@@ -84,6 +84,11 @@ ggplot(plotdata,aes(rel_gdpcap2019-1,revgap2019-1))+
 Canada data table 36-10-0450 and 36-10-0222 for Canada. Graph by @trevortombe.")
 ggsave('plot.png',width=7,height=5,dpi=200)
 
+# Table of Excess Federal Revenues
+table<-plotdata %>%
+  select(label,revgap2019) %>%
+  arrange(-revgap2019)
+
 # Attempt to extract Alaska, hawaii
 alaska <- ca[ca$STATEABB=="US-AK" & !is.na(ca$STATEABB),]
 #alaska <- elide(alaska, rotate=-50)
