@@ -83,6 +83,7 @@ ggplot(plotdata,aes(rel_gdpcap2019-1,revgap2019-1))+
        caption="Source: Own calculations from IRS SOI Tax Stats for the USA and Statistics
 Canada data table 36-10-0450 and 36-10-0222 for Canada. Graph by @trevortombe.")
 ggsave('plot.png',width=7,height=5,dpi=200)
+ggsave('Figure4.eps',width=7,height=5,dpi=300)
 
 # Table of Excess Federal Revenues
 table<-plotdata %>%
@@ -210,6 +211,7 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2019ppp),map=test2,c
        subtitle="Note: Own calculations using data from Statistics Canada data table 36-10-0222 and the US BEA. 
        All values are in real PPP-adjusted US dollars using OECD PPPs (doi: 10.1787/1290ee5a-en). Graph by @trevortombe.")
 ggsave("map.png",width=8,height=6.25,dpi=300)
+ggsave("Figure3.eps",width=8,height=6.25,dpi=300)
 
 #########################
 # Including Territories #
