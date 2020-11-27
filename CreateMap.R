@@ -395,6 +395,35 @@ ggplot() + geom_map(data=plotdata_canada,aes(map_id=id,fill=share),map=ca_map,co
        the U.S. Census Bureau, and the Bureau of Economic Analysis. Graph by @trevortombe.")
 ggsave("map.png",width=8,height=4.5,dpi=300)
 
+# Internal Trade
+ggplot() + geom_map(data=plotdata_canada,aes(map_id=id,fill=int_trade_share_2019),
+                    map=ca_map,color="white") +
+  expand_limits(x=c(-130,-50),y=c(44,60)) +
+  coord_map("albers",lat0=40, lat1=60)+
+  scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3", limits = c(0,0.55),
+                        guide_legend(title="CAN-USA Two-Way Trade as % of GDP : "))+
+  theme(
+    axis.text.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.ticks.x=element_blank(),
+    panel.grid.major = element_blank(),
+    #panel.grid.major = element_line(color='blue'),
+    panel.background = element_rect(fill = "transparent"),
+    plot.background = element_rect(fill = "transparent", color = NA),
+    legend.position="none",
+    #legend.text=element_text(size=10),
+    plot.title = element_text(size = 16, face = "bold",hjust=0.5),
+    plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
+    plot.margin = unit(c(-0,-2,-0,-1), "cm")
+  ) +
+  geom_text_repel(data=plotdata_canada,
+                  aes(label = paste(100*int_trade_share_2019,"%",sep=""), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=4.5) +
+  labs(x="",y="")
+ggsave("map.eps",width=8,height=4.5,dpi=300)
+ggsave("plot.png",width=8,height=4.5,dpi=300)
+
 # Fiscal Transfers in 2018
 ggplot() + geom_map(data=plotdata_canada %>% mutate(status=ifelse(gap>0,"giver","getter")),
                     aes(map_id=id,fill=status),
