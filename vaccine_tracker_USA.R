@@ -63,7 +63,7 @@ test2<-fortify(test,region="STATEABB")
 ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=vaccines),map=test2,color="white") +
   expand_limits(x=-100,y=50) +
   coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
-  scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3") +
+  scale_fill_continuous(low = "#eff3ff",high = "dodgerblue") +
   theme(
     axis.text.y = element_blank(),
     axis.text.x = element_blank(),
@@ -72,10 +72,9 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=vaccines),map=test2,color="
     panel.grid.minor = element_blank(),
     panel.background = element_blank(),
     legend.position="none",
-    #legend.text=element_text(size=10),
     plot.title = element_text(size = 16, face = "bold",hjust=0.5),
     plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
-    plot.margin = unit(c(-2,-2,-2,-1), "cm")
+    plot.margin = unit(c(-2,-1,-2,-1), "cm") # t,r,b,l
   )+
   annotate('rect',xmin=bbox(alaska)[1]+2,xmax=-129,ymin=bbox(alaska)[2],ymax=bbox(alaska)[4]+1,
            fill="transparent",color="gray",size=1,linetype="dotted")+
@@ -92,5 +91,5 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=vaccines),map=test2,color="
        title=paste0("COVID-19 Vaccine Doses Administered per 100 People (",as_of_label,")"),
        subtitle="Note: Own calculations using data from N. Little. COVID-19 Tracker Canada (2020), COVID19Tracker.ca, 
 Statistics Canada 17-10-0005, and the CDC COVID Data Tracker. Graph by @trevortombe.")
-ggsave("COVID_vaccine_map.png",width=8,height=6.25,dpi=300)
+ggsave("COVID_vaccine_map.png",width=8,height=6.75,dpi=300)
 
