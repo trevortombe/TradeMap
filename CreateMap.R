@@ -105,10 +105,11 @@ test <- ca[ca$STATEABB!="US-AK" & ca$STATEABB!="US-HI" & !is.na(ca$STATEABB),]
 test <- rbind(test,alaska,hawaii)
 test2<-fortify(test,region="STATEABB")
 
-ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=med_income_2015),map=test2,color="white") +
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdp_growth_2020),map=test2,color="white") +
   expand_limits(x=-100,y=50) +
   coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
-  scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3") +
+  # scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3") +
+  scale_fill_gradient2(low=col[1],high=col[2],mid='white',midpoint = 0)+
   theme(
     axis.text.y = element_blank(),
     axis.text.x = element_blank(),
@@ -126,17 +127,43 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=med_income_2015),map=test2,
            fill="transparent",color="gray",size=1,linetype="dotted")+
   annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
            fill="transparent",color="gray",size=1,linetype="dotted")+
-  geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  aes(label = paste("$",round(med_income_2015),sep=""), x = Longitude, y = Latitude),
-                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3) +
+  geom_text(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  aes(label = number(gdp_growth_2020,.1), x = Longitude, y = Latitude),fontface="bold",size=3) +
   geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  xlim=c(0.37,0.37),aes(label = paste("$",round(med_income_2015),sep=""), x = Longitude, y = Latitude),
+                  xlim=c(0.37,0.37),aes(label = number(gdp_growth_2020,.1), x = Longitude, y = Latitude),
                   point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3,
-                  segment.color = "gray80",segment.size = 0.25) +
-  labs(x="",y="",title="Median Household Income in 2015 (000s USD, PPP)",
-       subtitle="Note: Own calculations using data from Statistics Canada (Census 2016) and the U.S. Census Bureau. 
-       Real dollars, PPP adjusted. Graph by @trevortombe.")
-ggsave("map.png",width=8,height=6.25,dpi=300)
+                  segment.color = "gray80",segment.size = 0.25,nudge_y=-2) +
+  labs(x="",y="",title="Real GDP Growth in 2020",
+       subtitle="Note: Own calculations using data from Statistics Canada and the U.S. BEA. Graph by @trevortombe.")
+ggsave("map.png",width=8,height=6.25,dpi=200)
+
+# Bring in COVID cases
+require('covid19.analytics')
+temp<-covid19.data("ts-confirmed")
+Canada<-temp %>%
+  filter(Country.Region %in% c("Canada")) %>%
+  rename(Name=Province.State) %>%
+  select(-Country.Region,-Lat,-Long) %>%
+  gather(date,cases,-Name)
+temp<-covid19.data("ts-confirmed-US")
+USA<-temp %>%
+  rename(Name=Province_State) %>%
+  select(-Country_Region,-Lat,-Long_) %>%
+  gather(date,cases,-Name)
+casedata<-Canada %>%
+  rbind(USA) %>%
+  mutate(date=as.Date(date)) %>%
+  group_by(Name,date) %>%
+  summarise(cases=sum(cases)) %>%
+  filter(year(date)==2020) %>%
+  group_by(Name) %>%
+  filter(date==max(date)) %>%
+  left_join(plotdata %>% select(Name,id,gdp_growth_2020,pop_2020),by="Name") %>%
+  mutate(rate=cases/pop_2020)
+ggplot(casedata,aes(rate,gdp_growth_2020))+
+  geom_point()
+
+
 
 # Fiscal Transfers in 2017, by State/Province
 ggplot() + geom_map(data=plotdata %>% mutate(status=ifelse(gap>0,"giver","getter")),
@@ -220,7 +247,7 @@ new_centroids<-centroids %>%
   rbind(data.frame(id="US-AK",state="Alaska",Longitude=-151,Latitude=64.5,abbrev="AK")) %>%
   rbind(data.frame(id="US-HI",state="Hawaii",Longitude=-142,Latitude=36,abbrev="HI"))
 plotdata<-tibble(id=ca@data[,5]) %>%
-  distinct(id,Longitude,Latitude) %>%
+  distinct(id) %>%
   left_join(data,by="id") %>%
   left_join(new_centroids,by="id") %>%
   mutate(share=(Exports+Imports)/GDP,
@@ -237,10 +264,10 @@ proj4string(hawaii) <- proj4string(ca)
 test <- ca[ca$STATEABB!="US-HI" & !is.na(ca$STATEABB),]
 test <- rbind(test,hawaii)
 test2<-fortify(test,region="STATEABB")
-ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=med_income_2015),map=test2,color="transparent") +
-  expand_limits(x=-100,y=50) +
-  coord_map("albers",lat0=40, lat1=70,xlim=c(-140,-40),ylim=c(25,86))+
-  scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3") +
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdp_growth_2020),map=test2,color="white") +
+  coord_map("albers",lat0=30, lat1=70,xlim=c(-135,-59),ylim=c(25,75))+
+  # scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3") +
+  scale_fill_gradient2(low=col[1],high=col[2],mid='white',midpoint = 0)+
   theme(
     axis.text.y = element_blank(),
     axis.text.x = element_blank(),
@@ -252,21 +279,19 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=med_income_2015),map=test2,
     #legend.text=element_text(size=10),
     plot.title = element_text(size = 16, face = "bold",hjust=0.5),
     plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
-    plot.margin = unit(c(-2,-2,-2,-1), "cm")
+    plot.margin = unit(c(0.5,-2,-1,-2), "cm") # t,r,b,l
   )+
   annotate('rect',xmin=-146,xmax=-136,ymin=34,ymax=41,fill="transparent",color="gray",size=1,linetype="dotted")+
   #annotate('segment',x=-146,xend=-135,y=33,yend=33,color="white",size=2)+
-  geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  aes(label = paste("$",round(med_income_2015),sep=""), x = Longitude, y = Latitude),
-                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.5) +
+  geom_text(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  aes(label = number(gdp_growth_2020,.1), x = Longitude, y = Latitude),fontface="bold",size=2.5) +
   geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  xlim=c(.35,.35),aes(label = paste("$",round(med_income_2015),sep=""), x = Longitude, y = Latitude),
+                  xlim=c(.35,.35),aes(label = number(gdp_growth_2020,.1), x = Longitude, y = Latitude),
                   point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.5,
-                  segment.color = "gray80",segment.size = 0.25) +
-  labs(x="",y="",title="Median Household Income in 2015 (000s USD, PPP)",
-       subtitle="Note: Own calculations using data from Statistics Canada (Census 2016) and the U.S. Census Bureau. 
-       Real dollars, PPP adjusted. Graph by @trevortombe.")
-ggsave("map_all_NA.png",width=7,height=6.75,dpi=300)
+                  segment.color = "gray80",segment.size = 0.25,nudge_y=-2) +
+  labs(x="",y="",title="Real GDP Growth in 2020",
+       subtitle="Note: Own calculations using data from Statistics Canada and the U.S. BEA. Graph by @trevortombe.")
+ggsave("map_all_NA.png",width=8,height=6,dpi=200)
 
 ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2018ppp),map=test2,color="transparent") +
   expand_limits(x=-100,y=50) +

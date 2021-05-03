@@ -30,6 +30,10 @@ canada_data<-as.data.frame(fromJSON('https://api.covid19tracker.ca/summary/split
   select(short=data.province,vaccines=data.total_vaccinations) %>%
   left_join(data %>% mutate(short=substr(id,4,5)) %>% select(short,pop_2020),by="short") %>%
   mutate(vaccines=100*vaccines/pop_2020)
+territories<-weighted.mean((canada_data %>% filter(short %in% c("YT","NT","NU")))$vaccines,
+                           (canada_data %>% filter(short %in% c("YT","NT","NU")))$pop)
+territories_covid<-weighted.mean((data %>% filter(id %in% c("CA-YT","CA-NT","CA-NU")))$covid_cases,
+                           (data %>% filter(id %in% c("CA-YT","CA-NT","CA-NU")))$pop_2020)
 
 # Format the data
 plotdata<-tibble(id=ca@data[,5]) %>%
@@ -40,7 +44,7 @@ plotdata<-tibble(id=ca@data[,5]) %>%
   left_join(cdc_data,by="Name") %>%
   mutate(label=substr(id,4,5)) %>%
   filter(!(id %in% c("CA-YT","CA-NU","CA-NT"))) %>%
-  select(Name,id,Longitude,Latitude,vaccines=Administered.per.100K) %>%
+  select(Name,id,Longitude,Latitude,vaccines=Administered.per.100K,covid_cases) %>%
   mutate(short=substr(id,4,5),
          vaccines=as.numeric(as.character(vaccines)),
          vaccines=vaccines/1000) %>%
@@ -74,12 +78,13 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=vaccines),map=test2,color="
     legend.position="none",
     plot.title = element_text(size = 16, face = "bold",hjust=0.5),
     plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
-    plot.margin = unit(c(-2,-1,-2,-1), "cm") # t,r,b,l
+    plot.margin = unit(c(-0.5,-2,-2,-1), "cm") # t,r,b,l
   )+
-  annotate('rect',xmin=bbox(alaska)[1]+2,xmax=-129,ymin=bbox(alaska)[2],ymax=bbox(alaska)[4]+1,
-           fill="transparent",color="gray",size=1,linetype="dotted")+
-  annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
-           fill="transparent",color="gray",size=1,linetype="dotted")+
+  # annotate('rect',xmin=bbox(alaska)[1]+2,xmax=-129,ymin=bbox(alaska)[2],ymax=bbox(alaska)[4]+1,
+  #          fill="transparent",color="gray",size=1,linetype="dotted")+
+  # annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
+  #          fill="transparent",color="gray",size=1,linetype="dotted")+
+  annotate('text',x=-100,y=63,label=paste("Territories:",number(territories,.1)),size=3)+
   geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
                   aes(label = number(vaccines,.1), x = Longitude, y = Latitude),
                   point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3) +
@@ -91,5 +96,39 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=vaccines),map=test2,color="
        title=paste0("COVID-19 Vaccine Doses Administered per 100 People (",as_of_label,")"),
        subtitle="Note: Own calculations using data from N. Little. COVID-19 Tracker Canada (2020), COVID19Tracker.ca, 
 Statistics Canada 17-10-0005, and the CDC COVID Data Tracker. Graph by @trevortombe.")
-ggsave("COVID_vaccine_map.png",width=8,height=6.75,dpi=300)
+
+ggsave("COVID_vaccine_map.png",width=10,height=6.75,dpi=300)
+
+# Cases per 100,000
+url<-"https://data.cdc.gov/resource/9mfq-cb36.json"
+test<-fromJSON(url)
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=covid_cases),map=test2,color="white") +
+  expand_limits(x=-100,y=50) +
+  coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
+  scale_fill_continuous(low = "#ffe5e5",high = "#e50000") +
+  theme(
+    axis.text.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.ticks.x=element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    legend.position="none",
+    plot.title = element_text(size = 16, face = "bold",hjust=0.5),
+    plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
+    plot.margin = unit(c(0.5,-2,0,-2), "cm") # t,r,b,l
+  )+
+  annotate('text',x=-100,y=63,label=paste("Canadian Territories:",number(territories_covid,.1)),size=2.5,color='gray30')+
+  geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  aes(label = number(covid_cases,.1), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0,"cm"),fontface="bold",size=3) +
+  geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  xlim=c(0.37,0.37),aes(label = number(covid_cases,.1), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3,
+                  segment.color = "gray80",segment.size = 0.25) +
+  labs(x="",y="",
+       title=paste0("Average Daily COVID-19 Cases per 100,000 People (",
+                    gsub(" 0"," ",format(today-1,"%b %d, %Y")),")"),
+       subtitle="Note: Own calculations from PHAC and CDC data. Based on 7-day daily averages. Graph by @trevortombe.")
+ggsave("COVID_map.png",width=10,height=6.75,dpi=300)
 
