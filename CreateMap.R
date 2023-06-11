@@ -193,9 +193,9 @@ ggplot() + geom_map(data=plotdata %>% mutate(status=ifelse(gap>0,"giver","getter
            fill="transparent",color="gray",size=1,linetype="dotted")+
   annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
            fill="transparent",color="gray",size=1,linetype="dotted")+
-  geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+  geom_text(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
                   aes(label = paste("$",round(1000*gap/cadusd_2017,1),"k",sep=""), x = Longitude, y = Latitude),
-                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.75) +
+                  fontface="bold",size=2.75) +
   geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
                   xlim=c(0.37,0.37),aes(label = paste("$",round(1000*gap/cadusd_2017,1),"k",sep=""), x = Longitude, y = Latitude),
                   point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.75,
@@ -255,11 +255,11 @@ ggplot(plot_rank,aes(reorder(Name,-rank),1000*gdpcap_2022ppp,group=Country,fill=
   scale_fill_manual(values=col[1:2])+
   mythemebarflip+
   scale_y_continuous(label=dollar,expand=c(0,0),limit=c(0,110000))+
-  labs(x="",y="",title="GDP per Capita in 2022 (000s USD, PPP)",
+  labs(x="",y="",title="GDP per Capita in 2022 (000s USD, Purchasing Power Adj.)",
        caption='Graph by @trevortombe',
-       subtitle="Note: Own calculations using data from Statistics Canada data table 36-10-0222, RBC June 2023 forecast, and the US BEA. 
-All values are in real PPP-adjusted US dollars using OECD PPPs (doi: 10.1787/1290ee5a-en).")
-ggsave("bars.png",width=8,height=8)
+       subtitle="Note: Own calculations using data from Statistics Canada data table 36-10-0222, RBC June 2023 forecast,
+and the US BEA. All values are in real PPP-adjusted USD using OECD PPPs (doi: 10.1787/1290ee5a-en).")
+ggsave("bars.png",width=7.5,height=7.5)
 
 #########################
 # Including Territories #
