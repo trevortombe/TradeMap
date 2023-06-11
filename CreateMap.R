@@ -31,6 +31,7 @@ plotdata<-tibble(id=ca@data[,5]) %>%
          gdpcap_2017ppp=1000*(gdp_2017/ppp_2016)/pop_2017,
          gdpcap_2018ppp=1000*(gdp_2018/ppp_2018)/pop_2018,
          gdpcap_2019ppp=1000*(gdp_2019/ppp_2019)/pop_2019,
+         gdpcap_2022ppp=1000*(gdp_2022/ppp_2022)/pop_2022,
          med_income_2015=round((medianHH_2016/ppp_2016)/1000),
          revPC=weighted.mean(fed_rev_2017,pop_2017),
          revPC_2019=weighted.mean(fed_rev_2019,pop_2019),
@@ -205,11 +206,11 @@ Net \"outflows\" imply federal revenue exceeds federal spending. Source: Own cal
 Canada data table 36-10-0450 for Canada. Methodology in Tombe (2018, Canadian Tax Journal).")
 ggsave("map.png",width=8,height=6.25,dpi=300)
 
-# GDP per Capita
-ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2019ppp),map=test2,color="white") +
+# GDP per Capita in 2022
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2022ppp),map=test2,color="white") +
   expand_limits(x=-100,y=50) +
   coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
-  scale_fill_continuous(low = "#e1f0ff",high = "dodgerblue3") +
+  scale_fill_continuous(low = "#e1f0ff",high = "dodgerblue") +
   theme(
     axis.text.y = element_blank(),
     axis.text.x = element_blank(),
@@ -218,27 +219,47 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2019ppp),map=test2,c
     panel.grid.minor = element_blank(),
     panel.background = element_blank(),
     legend.position="none",
-    #legend.text=element_text(size=10),
     plot.title = element_text(size = 16, face = "bold",hjust=0.5),
     plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
-    plot.margin = unit(c(-2,-2,-2,-1), "cm")
+    plot.margin = unit(c(-2,-1,-3,-1), "cm")
   )+
   annotate('rect',xmin=bbox(alaska)[1]+2,xmax=-129,ymin=bbox(alaska)[2],ymax=bbox(alaska)[4]+1,
            fill="transparent",color="gray",size=1,linetype="dotted")+
   annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
            fill="transparent",color="gray",size=1,linetype="dotted")+
-  geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  aes(label = paste("$",round(gdpcap_2019ppp),sep=""), x = Longitude, y = Latitude),
-                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3) +
+  geom_text(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  aes(label = paste("$",round(gdpcap_2022ppp),sep=""), x = Longitude, y = Latitude),
+                  fontface="bold",size=3) +
   geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  xlim=c(0.37,0.37),aes(label = paste("$",round(gdpcap_2019ppp),sep=""), x = Longitude, y = Latitude),
-                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3,
+                  xlim=c(0.37,0.37),aes(label = paste("$",round(gdpcap_2022ppp),sep=""), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.0,"cm"),fontface="bold",size=3,
                   segment.color = "gray80",segment.size = 0.25) +
-  labs(x="",y="",title="GDP per Capita in 2019 (000s USD, PPP)",
-       subtitle="Note: Own calculations using data from Statistics Canada data table 36-10-0222 and the US BEA. 
-       All values are in real PPP-adjusted US dollars using OECD PPPs (doi: 10.1787/1290ee5a-en). Graph by @trevortombe.")
-ggsave("map.png",width=8,height=6.25,dpi=300)
+  labs(x="",y="",title="GDP per Capita in 2022 (000s USD, Purchasing Power Adjusted)",
+       subtitle="Note: Own calculations using data from Statistics Canada data table 36-10-0222, RBC June 2023 forecast, and the US BEA. 
+All values are in real PPP-adjusted US dollars using OECD PPPs (doi: 10.1787/1290ee5a-en). Graph by @trevortombe.")
+ggsave("map.png",width=7.5,height=5.5)
 ggsave("Figure3.eps",width=8,height=6.25,dpi=300)
+
+# GDP per capita ranking
+plot_rank<-plotdata %>%
+  select(Name,gdpcap_2022ppp,Country) %>%
+  mutate(rank=rank(-gdpcap_2022ppp)) %>%
+  arrange(rank)
+ggplot(plot_rank,aes(reorder(Name,-rank),1000*gdpcap_2022ppp,group=Country,fill=Country))+
+  geom_col(show.legend = F)+
+  geom_text(data=filter(plot_rank,Country=="Canada"),
+            aes(label=ordinal(rank)),
+            size=3,color=col[3],nudge_y=2500)+
+  coord_flip()+
+  geom_hline(yintercept=0,size=1)+
+  scale_fill_manual(values=col[1:2])+
+  mythemebarflip+
+  scale_y_continuous(label=dollar,expand=c(0,0),limit=c(0,110000))+
+  labs(x="",y="",title="GDP per Capita in 2022 (000s USD, PPP)",
+       caption='Graph by @trevortombe',
+       subtitle="Note: Own calculations using data from Statistics Canada data table 36-10-0222, RBC June 2023 forecast, and the US BEA. 
+All values are in real PPP-adjusted US dollars using OECD PPPs (doi: 10.1787/1290ee5a-en).")
+ggsave("bars.png",width=8,height=8)
 
 #########################
 # Including Territories #
