@@ -6,7 +6,9 @@ ca <- readOGR("bound_p.shp")
 ca_map <- fortify(ca, region="STATEABB")
 
 # Merge data
-data<-read.csv("data.csv")
+# Latest data created using the CIMT.R
+data<-read.csv("data.csv") %>%
+  mutate(gdp_2022=as.numeric(gdp_2022))
 
 # Centroids for labels
 centroids<-read.csv("centroids.csv",stringsAsFactors=FALSE)
@@ -22,7 +24,9 @@ plotdata<-tibble(id=ca@data[,5]) %>%
   left_join(new_centroids,by="id") %>%
   filter(!is.na(Country)) %>%
   group_by(Country) %>%
-  mutate(share=(Exports+Imports)/GDP,
+  mutate(canada_us_trade=0.5*(Exp_US_CDN_Trade_2022+Imp_US_CDN_Trade_2022),
+         canada_us_trade=ifelse(Country=="USA",canada_us_trade/1.3497,canada_us_trade), # 2022 avg exchange rate
+         share=canada_us_trade/gdp_2022,
          Rounded=round(share*100),
          gdpcap_2017=1000*(gdp_2017/cadusd_2017)/pop_2017,
          country_gdpcap=weighted.mean(gdpcap_2017,pop_2017),
@@ -137,6 +141,42 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdp_growth_2020),map=test2,
   labs(x="",y="",title="Real GDP Growth in 2020",
        subtitle="Note: Own calculations using data from Statistics Canada and the U.S. BEA. Graph by @trevortombe.")
 ggsave("map.png",width=8,height=6.25,dpi=200)
+
+
+#################
+# Canada + US48 #
+#################
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=2*share),map=test2,color="white") +
+  expand_limits(x=-100,y=50) +
+  coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
+  scale_fill_continuous(low = "#e1f0ff",high = "#0073E6", limits = c(0,0.65),
+                        guide_legend(title="CAN-USA Two-Way Trade as % of GDP : "),labels=percent, breaks=c(0,0.25,0.50)) +
+  theme(
+    axis.text.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.ticks.x=element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    legend.position="none",
+    plot.title = element_text(size = 16, face = "bold",hjust=0.5),
+    plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
+    plot.margin = unit(c(-2,-2,-2,-1), "cm")
+  ) +
+  annotate('rect',xmin=bbox(alaska)[1]+2,xmax=-129,ymin=bbox(alaska)[2],ymax=bbox(alaska)[4]+1,
+           fill="transparent",color="gray",size=1,linetype="dotted")+
+  annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
+           fill="transparent",color="gray",size=1,linetype="dotted")+
+  geom_text(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+            aes(label = percent(2*share,0.1), x = Longitude, y = Latitude),fontface="bold",size=3) +
+  geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  xlim=c(0.37,0.37),aes(label = percent(2*share,0.1), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=3,
+                  segment.color = "gray80",segment.size = 0.25,nudge_y=-2) +
+  labs(x="",y="",title="The Importance of Canada-USA Trade, by Province/State (2022)",
+       subtitle="Note: Own calculations using data from Statistics Canada, Industry Canada, and the Bureau of Economic Analysis.
+Reflects total trade volumes (imports plus exports) as a share of GDP. Graph by @trevortombe.")
+ggsave("map.png",width=9.5,height=7,dpi=300)
 
 # Bring in COVID cases
 require('covid19.analytics')
@@ -344,39 +384,6 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=gdpcap_2018ppp),map=test2,c
        subtitle="Note: Own calculations using data from Statistics Canada data table 36-10-0222 and the US BEA. 
        All values are in real PPP-adjusted US dollars, based on 36-10-0100. Graph by @trevortombe.")
 ggsave("map_all_NA.png",width=7,height=6.75,dpi=300)
-
-#################
-# Canada + US48 #
-#################
-ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=share),map=ca_map,color="white") +
-  expand_limits(x=c(-130,-59),y=c(28,60)) +
-  coord_map("albers",lat0=40, lat1=60)+
-  scale_fill_continuous(low = "#eff3ff",high = "dodgerblue3", limits = c(0,0.50),
-    guide_legend(title="CAN-USA Two-Way Trade as % of GDP : "),labels=percent, breaks=c(0,0.25,0.50)) +
-  theme(
-    axis.text.y = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks.y=element_blank(),
-    axis.ticks.x=element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.background = element_blank(),
-    legend.position="none",
-    #legend.text=element_text(size=10),
-    plot.title = element_text(size = 16, face = "bold",hjust=0.5),
-    plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
-    plot.margin = unit(c(-2,-2,-2,-1), "cm")
-  ) +
-  geom_text_repel(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  aes(label = paste(Rounded,"%",sep=""), x = Longitude, y = Latitude),
-                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.5) +
-  geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  xlim=c(0.32,0.32),aes(label = paste(Rounded,"%",sep=""), x = Longitude, y = Latitude),
-                  point.padding = unit(0,"cm"), box.padding = unit(0.1,"cm"),fontface="bold",size=2.5,
-                  segment.color = "gray80",segment.size = 0.25) +
-  labs(x="",y="",title="The Importance of Canada-USA Trade, by Province/State (2016)",
-       subtitle="Note: Own calculations using data from Statistics Canada, Industry Canada,
-the U.S. Census Bureau, and the Bureau of Economic Analysis. Graph by @trevortombe.")
-ggsave("map.png",width=8,height=6.25,dpi=300)
 
 ###########################
 # Median Household Income #
