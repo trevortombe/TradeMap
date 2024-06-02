@@ -280,6 +280,41 @@ All values are in real PPP-adjusted US dollars using OECD PPPs (doi: 10.1787/129
 ggsave("map.png",width=7.5,height=5.5)
 ggsave("Figure3.eps",width=8,height=6.25,dpi=300)
 
+# Top personal income taxes
+
+# GDP per Capita in 2022
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=top_pit),map=test2,color="white") +
+  expand_limits(x=-100,y=50) +
+  coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
+  scale_fill_continuous(low = "#e1f0ff",high = "dodgerblue") +
+  theme(
+    axis.text.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.ticks.x=element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.background = element_blank(),
+    legend.position="none",
+    plot.title = element_text(size = 16, face = "bold",hjust=0.5),
+    plot.subtitle = element_text(size = 7, color="gray50",hjust=0.5),
+    plot.margin = unit(c(-2,-1,-3,-1), "cm")
+  )+
+  annotate('rect',xmin=bbox(alaska)[1]+2,xmax=-129,ymin=bbox(alaska)[2],ymax=bbox(alaska)[4]+1,
+           fill="transparent",color="gray",size=1,linetype="dotted")+
+  annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
+           fill="transparent",color="gray",size=1,linetype="dotted")+
+  geom_text(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+            aes(label = paste(percent(top_pit,.01),"%",sep=""), x = Longitude, y = Latitude),
+            fontface="bold",size=3) +
+  geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
+                  xlim=c(0.37,0.37),aes(label = paste(percent(top_pit),"%",sep=""), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.0,"cm"),fontface="bold",size=3,
+                  segment.color = "gray80",segment.size = 0.25) +
+  labs(x="",y="",title="GDP per Capita in 2022 (000s USD, Purchasing Power Adjusted)",
+       subtitle="Note: Own calculations using data from Statistics Canada data table 36-10-0222, RBC June 2023 forecast, and the US BEA. 
+All values are in real PPP-adjusted US dollars using OECD PPPs (doi: 10.1787/1290ee5a-en). Graph by @trevortombe.")
+
+
 # GDP per capita ranking
 plot_rank<-plotdata %>%
   select(Name,gdpcap_2022ppp,Country) %>%
