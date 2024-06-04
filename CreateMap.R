@@ -15,7 +15,8 @@ centroids<-read.csv("centroids.csv",stringsAsFactors=FALSE)
 new_centroids<-centroids %>%
   rbind(data.frame(id="US-AK",state="Alaska",Longitude=-140,Latitude=45,abbrev="AK")) %>%
   rbind(data.frame(id="US-HI",state="Hawaii",Longitude=-133,Latitude=32,abbrev="HI")) %>%
-  mutate(Latitude=ifelse(id %in% c("CA-YT","CA-NU","CA-NT"),62,Latitude))
+  mutate(Latitude=ifelse(id %in% c("CA-YT","CA-NU","CA-NT"),62,Latitude),
+         Latitude=ifelse(id=="US-IN",41,Latitude))
 
 # Format the data
 plotdata<-tibble(id=ca@data[,5]) %>%
@@ -281,7 +282,7 @@ ggsave("map.png",width=7.5,height=5.5)
 ggsave("Figure3.eps",width=8,height=6.25,dpi=300)
 
 # Top personal income taxes
-ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=top_pit),map=test2,color="white") +
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=pit_300k),map=test2,color="white") +
   expand_limits(x=-100,y=50) +
   coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
   scale_fill_continuous(low = "#e1f0ff",high = "dodgerblue",limit=c(0.3,NA)) +
@@ -302,15 +303,16 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=top_pit),map=test2,color="w
   annotate('rect',xmin=bbox(hawaii)[1],xmax=bbox(hawaii)[3]+1,ymin=bbox(hawaii)[2]-1,ymax=bbox(hawaii)[4]+1,
            fill="transparent",color="gray",size=1,linetype="dotted")+
   geom_text(data=plotdata %>% filter(!id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-            aes(label = percent(top_pit,.1), x = Longitude, y = Latitude),
+            aes(label = percent(pit_300k,.1), x = Longitude, y = Latitude),
             fontface="bold",size=3) +
   geom_text_repel(data=plotdata %>% filter(id %in% c("US-DE","US-NH","US-RI","US-MA","US-NJ","US-MD")),
-                  xlim=c(0.37,0.37),aes(label = percent(top_pit,.1), x = Longitude, y = Latitude),
-                  point.padding = unit(0,"cm"), box.padding = unit(0.0,"cm"),fontface="bold",size=3,
+                  xlim=c(0.37,0.37),aes(label = percent(pit_300k,.1), x = Longitude, y = Latitude),
+                  point.padding = unit(0,"cm"), box.padding = unit(0.01,"cm"),
+                  fontface="bold",size=3,
                   segment.color = "gray80",segment.size = 0.25) +
-  labs(x="",y="",title="Top Personal Income Tax Rates",
-       subtitle="Note: Own calculations using data from XXXXXX. Graph by @trevortombe.")
-ggsave("map.png",width=9,height=6)
+  labs(x="",y="",title="Top Personal Income Tax Rates for Individual Earning $300k",
+       subtitle="Note: Own calculations using data from Finances of the Nation and the Tax Foundation. Graph by @trevortombe.")
+ggsave("map.png",width=7,height=5)
 
 
 # GDP per capita ranking
