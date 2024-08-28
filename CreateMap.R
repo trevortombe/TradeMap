@@ -46,11 +46,9 @@ plotdata<-tibble(id=ca@data[,5]) %>%
          gapGDP=gap*pop_2017/GDP,
          label=substr(id,4,5)) %>%
   ungroup() %>%
-  filter(!(id %in% c("CA-YT","CA-NU","CA-NT"))) %>%
+  # filter(!(id %in% c("CA-YT","CA-NU","CA-NT"))) %>%
   filter(!is.na(med_income_2015)) 
 
-  filter(!(id %in% c("US-HI","US-AK")))
-  
 # Plot of revenue/spending differences across states/provinces
 ggplot(plotdata,aes(rel_gdpcap-1,gapGDP))+
   geom_smooth(method = "lm",se=F,color="black",linetype="dashed")+
@@ -282,9 +280,9 @@ ggsave("map.png",width=7.5,height=5.5)
 ggsave("Figure3.eps",width=8,height=6.25,dpi=300)
 
 # Top personal income taxes
-ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=pit_300k),map=test2,color="white") +
+ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=top_pit),map=test2,color="white") +
   expand_limits(x=-100,y=50) +
-  coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,61))+
+  coord_map("albers",lat0=40, lat1=60,xlim=c(-135,-59),ylim=c(25,65))+
   scale_fill_continuous(low = "#e1f0ff",high = "dodgerblue",limit=c(0.3,NA)) +
   theme(
     axis.text.y = element_blank(),
@@ -310,8 +308,9 @@ ggplot() + geom_map(data=plotdata,aes(map_id=id,fill=pit_300k),map=test2,color="
                   point.padding = unit(0,"cm"), box.padding = unit(0.01,"cm"),
                   fontface="bold",size=3,
                   segment.color = "gray80",segment.size = 0.25) +
-  labs(x="",y="",title="Top Personal Income Tax Rates for Individual Earning $300k",
-       subtitle="Note: Own calculations using data from Finances of the Nation and the Tax Foundation. Graph by @trevortombe.")
+  labs(x="",y="",
+       title="Top Personal Income Tax Rates in North America",
+       subtitle="Note: Own calculations using data from Finances of the Nation and the Tax Foundation.")
 ggsave("map.png",width=7,height=5)
 
 
