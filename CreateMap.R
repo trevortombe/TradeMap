@@ -67,6 +67,7 @@ ggplot(plotdata,aes(rel_gdpcap-1,gapGDP))+
 common per capita benchmark, against each state/provinces's relative GDP per capita.",
        caption="Source: Own calculations from Schultz and Cummings (2019) for the USA and Statistics
 Canada data table 36-10-0450 and 36-10-0222 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
+
 ggsave('plot.png',width=7,height=5,dpi=200)
 
 # Federal Revenue vs Relative GDP/Capita
