@@ -25,6 +25,13 @@ library(readxl)
 #library(plyr)
 #library(colortools)
 col<-c("#CC2529","#396ab1","#3E9651","#DA7C30","#535154","#6B4C9A","#922428","#948B3D")
+colbar<-col
+scale_colour_discrete <- function(...) {
+  scale_colour_manual(..., values = col)
+}
+scale_fill_discrete <- function(...) {
+  scale_fill_manual(..., values = colbar)
+}
 
 # For the new StatCan Data Tables
 getTABLE<-function(x) {

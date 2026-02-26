@@ -2,8 +2,8 @@
 source("core.R")
 
 # Load the shapefiles
-ca <- readOGR("bound_p.shp")
-ca_map <- fortify(ca, region="STATEABB")
+# ca <- readOGR("bound_p.shp")
+# ca_map <- fortify(ca, region="STATEABB")
 library(sf)
 ca<-st_read("bound_p.shp")
 
@@ -20,30 +20,27 @@ new_centroids<-centroids %>%
          Latitude=ifelse(id=="US-IN",41,Latitude))
 
 # New format for the data
-plotdata<-ca %>%
-  filter(COUNTRY %in% c("CAN","USA"),
-         !STATEABB %in% c("CA-YT","CA-NU","CA-NT"),
-         !grepl("water",NAME)) %>%
-  rename(id=STATEABB) %>%
-  group_by(id) %>% 
-  summarize(geometry = st_union(geometry)) %>%
-  left_join(data,by="id") %>%
+plotdata<-data %>%
   mutate(short=substr(id,4,5)) %>%
-  filter(!is.na(Country)) %>%
+  filter(!id %in% c("US-DC","CA-YT","CA-NU","CA-NT")) %>%
   group_by(Country) %>%
+  rename(
+    gdp=gdp_2023,pop=pop_2023,ppp=ppp_2023,
+    fed_rev=fed_rev_2023,fed_exp=fed_exp_2023
+  ) %>%
   mutate(
-    gdpcap_2024ppp=1000*(gdp_2024/ppp_2024)/pop_2024,
-    country_gdpcap=weighted.mean(gdpcap_2024ppp,ppp_2024),
-    rel_gdpcap=gdpcap_2024ppp/country_gdpcap,
-    revgap2024=(fed_rev_2024/pop_2024)/(sum(fed_rev_2024)/sum(pop_2024)),
-    gap=fed_rev_2024/pop_2024-sum(fed_rev_2024)/sum(pop_2024)-fed_exp_2024/pop_2024+sum(fed_exp_2024)/sum(pop_2024),
-    gapGDP=gap*pop_2024/gdp_2024,
+    gdpcap_ppp=1000*(gdp/ppp)/pop,
+    country_gdpcap=weighted.mean(gdpcap_ppp,pop),
+    rel_gdpcap=gdpcap_ppp/country_gdpcap,
+    revgap=(fed_rev/pop)/(sum(fed_rev)/sum(pop)),
+    gap=fed_rev/pop-sum(fed_rev)/sum(pop)-fed_exp/pop+sum(fed_exp)/sum(pop),
+    gapGDP=gap*pop/gdp,
     label=substr(id,4,5)
   ) %>%
-  select(label,Country,gap,gdpcap_2024ppp,rel_gdpcap,gapGDP,revgap2024)
+  select(label,Country,gap,gdpcap_ppp,rel_gdpcap,gapGDP,revgap,pop)
 
 # Plot of revenue/spending differences across states/provinces
-ggplot(plotdata,aes(rel_gdpcap-1,revgap2024-1))+
+ggplot(plotdata,aes(rel_gdpcap-1,revgap-1))+
   geom_smooth(method = "lm",se=F,color="black",linetype="dashed")+
   geom_point(size=4,aes(color=Country))+
   geom_hline(yintercept=0,size=1)+
@@ -60,25 +57,23 @@ ggplot(plotdata,aes(rel_gdpcap-1,revgap2024-1))+
 # common per capita benchmark, against each state/provinces's relative GDP per capita.",
        caption="Source: Own calculations from Schultz and Cummings (2019) for the USA and Statistics
 Canada data table 36-10-0450 and 36-10-0222 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
-ggplot(plotdata %>% filter(label!="ND"),aes(rel_gdpcap-1,gapGDP))+
+ggplot(plotdata,aes(rel_gdpcap-1,gapGDP))+
   geom_smooth(method = "lm",se=F,color="black",linetype="dashed")+
   geom_point(size=4,aes(color=Country))+
   geom_hline(yintercept=0,size=1)+
   geom_text_repel(aes(label=label),segment.colour = "gray50",segment.alpha = 0.5)+
-  mytheme
+  mytheme+
   theme(legend.position = c(0.2,0.9),
         legend.title = element_blank())+
-  scale_y_continuous(label=percent,breaks=pretty_breaks(n=6))+
+  scale_y_continuous(label=percent,breaks=pretty_breaks(n=6),limit=c(-0.22,0.1))+
   scale_x_continuous(label=percent)+
-  labs(y="Federal revenue per capita (% of national average)",
+  labs(y="Adjusted balance per capita (% of national average)",
        x="GDP/capita (% of national average)",
-       title="Relative federal revenues vs GDP/capita, by State/Province",
+       title="Relative federal fiscal balance vs GDP/capita, by State/Province",
        #        subtitle="Note: Displays the differences between federal revenue and spending (as % of GDP), relative to a 
        # common per capita benchmark, against each state/provinces's relative GDP per capita.",
-       caption="Source: Own calculations from Schultz and Cummings (2019) for the USA and Statistics
-Canada data table 36-10-0450 and 36-10-0222 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
-
-
+       caption="Source: Own calculations from BEA, Census Bureau, and Rockefeller Institute Balance of Payments for the USA
+and Statistics Canada data table 36-10-0450 and 36-10-0222 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
 
 
 
