@@ -4,11 +4,12 @@ source("core.R")
 # Load the shapefiles
 ca <- readOGR("bound_p.shp")
 ca_map <- fortify(ca, region="STATEABB")
+library(sf)
+ca<-st_read("bound_p.shp")
 
 # Merge data
 # Latest data created using the CIMT.R
-data<-read.csv("data.csv") %>%
-  mutate(gdp_2022=as.numeric(gdp_2022))
+data<-read.csv("data.csv")
 
 # Centroids for labels
 centroids<-read.csv("centroids.csv",stringsAsFactors=FALSE)
@@ -17,6 +18,78 @@ new_centroids<-centroids %>%
   rbind(data.frame(id="US-HI",state="Hawaii",Longitude=-133,Latitude=32,abbrev="HI")) %>%
   mutate(Latitude=ifelse(id %in% c("CA-YT","CA-NU","CA-NT"),62,Latitude),
          Latitude=ifelse(id=="US-IN",41,Latitude))
+
+# New format for the data
+plotdata<-ca %>%
+  filter(COUNTRY %in% c("CAN","USA"),
+         !STATEABB %in% c("CA-YT","CA-NU","CA-NT"),
+         !grepl("water",NAME)) %>%
+  rename(id=STATEABB) %>%
+  group_by(id) %>% 
+  summarize(geometry = st_union(geometry)) %>%
+  left_join(data,by="id") %>%
+  mutate(short=substr(id,4,5)) %>%
+  filter(!is.na(Country)) %>%
+  group_by(Country) %>%
+  mutate(
+    gdpcap_2024ppp=1000*(gdp_2024/ppp_2024)/pop_2024,
+    country_gdpcap=weighted.mean(gdpcap_2024ppp,ppp_2024),
+    rel_gdpcap=gdpcap_2024ppp/country_gdpcap,
+    revgap2024=(fed_rev_2024/pop_2024)/(sum(fed_rev_2024)/sum(pop_2024)),
+    gap=fed_rev_2024/pop_2024-sum(fed_rev_2024)/sum(pop_2024)-fed_exp_2024/pop_2024+sum(fed_exp_2024)/sum(pop_2024),
+    gapGDP=gap*pop_2024/gdp_2024,
+    label=substr(id,4,5)
+  ) %>%
+  select(label,Country,gap,gdpcap_2024ppp,rel_gdpcap,gapGDP,revgap2024)
+
+# Plot of revenue/spending differences across states/provinces
+ggplot(plotdata,aes(rel_gdpcap-1,revgap2024-1))+
+  geom_smooth(method = "lm",se=F,color="black",linetype="dashed")+
+  geom_point(size=4,aes(color=Country))+
+  geom_hline(yintercept=0,size=1)+
+  geom_text_repel(aes(label=label),segment.colour = "gray50",segment.alpha = 0.5)+
+  mytheme+
+  theme(legend.position = c(0.2,0.9),
+        legend.title = element_blank())+
+  scale_y_continuous(label=percent,breaks=pretty_breaks(n=6))+
+  scale_x_continuous(label=percent)+
+  labs(y="Federal revenue per capita (% of national average)",
+       x="GDP/capita (% of national average)",
+       title="Relative federal revenues vs GDP/capita, by State/Province",
+#        subtitle="Note: Displays the differences between federal revenue and spending (as % of GDP), relative to a 
+# common per capita benchmark, against each state/provinces's relative GDP per capita.",
+       caption="Source: Own calculations from Schultz and Cummings (2019) for the USA and Statistics
+Canada data table 36-10-0450 and 36-10-0222 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
+ggplot(plotdata %>% filter(label!="ND"),aes(rel_gdpcap-1,gapGDP))+
+  geom_smooth(method = "lm",se=F,color="black",linetype="dashed")+
+  geom_point(size=4,aes(color=Country))+
+  geom_hline(yintercept=0,size=1)+
+  geom_text_repel(aes(label=label),segment.colour = "gray50",segment.alpha = 0.5)+
+  mytheme
+  theme(legend.position = c(0.2,0.9),
+        legend.title = element_blank())+
+  scale_y_continuous(label=percent,breaks=pretty_breaks(n=6))+
+  scale_x_continuous(label=percent)+
+  labs(y="Federal revenue per capita (% of national average)",
+       x="GDP/capita (% of national average)",
+       title="Relative federal revenues vs GDP/capita, by State/Province",
+       #        subtitle="Note: Displays the differences between federal revenue and spending (as % of GDP), relative to a 
+       # common per capita benchmark, against each state/provinces's relative GDP per capita.",
+       caption="Source: Own calculations from Schultz and Cummings (2019) for the USA and Statistics
+Canada data table 36-10-0450 and 36-10-0222 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Format the data
 plotdata<-tibble(id=ca@data[,5]) %>%
