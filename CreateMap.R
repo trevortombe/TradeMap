@@ -52,11 +52,12 @@ ggplot(plotdata,aes(rel_gdpcap-1,revgap-1))+
   scale_x_continuous(label=percent)+
   labs(y="Federal revenue per capita (% of national average)",
        x="GDP/capita (% of national average)",
-       title="Relative federal revenues vs GDP/capita, by State/Province",
+       title="Relative federal revenues vs GDP/capita, by State/Province (2023)",
 #        subtitle="Note: Displays the differences between federal revenue and spending (as % of GDP), relative to a 
 # common per capita benchmark, against each state/provinces's relative GDP per capita.",
-       caption="Source: Own calculations from Schultz and Cummings (2019) for the USA and Statistics
-Canada data table 36-10-0450 and 36-10-0222 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
+caption="Source: Own calculations from BEA, Census Bureau, and Rockefeller Institute Balance of Payments for the USA
+and Statistics Canada data table 36-10-0450 and 36-10-0222 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
+ggsave("plot1.png",width=8,height=4)
 ggplot(plotdata,aes(rel_gdpcap-1,gapGDP))+
   geom_smooth(method = "lm",se=F,color="black",linetype="dashed")+
   geom_point(size=4,aes(color=Country))+
@@ -69,11 +70,12 @@ ggplot(plotdata,aes(rel_gdpcap-1,gapGDP))+
   scale_x_continuous(label=percent)+
   labs(y="Adjusted balance per capita (% of national average)",
        x="GDP/capita (% of national average)",
-       title="Relative federal fiscal balance vs GDP/capita, by State/Province",
+       title="Relative federal fiscal balance vs GDP/capita, by State/Province (2023)",
        #        subtitle="Note: Displays the differences between federal revenue and spending (as % of GDP), relative to a 
        # common per capita benchmark, against each state/provinces's relative GDP per capita.",
        caption="Source: Own calculations from BEA, Census Bureau, and Rockefeller Institute Balance of Payments for the USA
 and Statistics Canada data table 36-10-0450 and 36-10-0222 for Canada. Methodology in Tombe (2018). Graph by @trevortombe.")
+ggsave("plot2.png",width=8,height=4)
 
 
 
